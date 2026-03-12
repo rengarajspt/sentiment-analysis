@@ -184,4 +184,30 @@ if page == "Review Page":
 
                 <h2 style='color:#4CAF50;'>Thank You For Your Feedback!</h2>
 
-                <h1 style='colo
+                <h1 style='color:#f59e0b'>{stars}</h1>
+
+                <p style='font-style:italic; color:#333;'>“{review}”</p>
+
+                <p style="color:#386E1F; font-weight:bold; font-size:28px;">
+                Sentiment: {sentiment}
+                </p>
+
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+
+# =====================================================
+# PAGE 2 : REVIEW ANALYSIS (Optional Visualization)
+# =====================================================
+elif page == "Review Analysis":
+
+    st.title("Review Insights Dashboard")
+
+    st.write("This section can be used to visualize review trends.")
+
+    st.info("You can extend this section to add analytics like:")
+    st.write("• Sentiment distribution")
+    st.write("• Word frequency")
+    st.write("• Review trends")      
