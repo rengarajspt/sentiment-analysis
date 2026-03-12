@@ -7,6 +7,6 @@ matplotlib
 seaborn
 joblib
 nltk
-tensorflow-cpu==2.15.0
+
 
 
