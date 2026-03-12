@@ -187,7 +187,7 @@ sentiment-analysis-project
 ### 1️⃣ Clone the Repository
 
 ```
-git clone https://github.com/your-username/sentiment-analysis-project.git
+(https://github.com/rengarajspt/sentiment-analysis/blob/main/sentiment_analysis.ipynb)
 ```
 
 ### 2️⃣ Install Dependencies
