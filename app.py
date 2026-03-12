@@ -1,26 +1,28 @@
-
 import streamlit as st
+
+# Page configuration MUST be first Streamlit command
+st.set_page_config(page_title="Customer Review App", layout="centered")
+
 import pandas as pd
+import numpy as np
 import joblib
 from scipy.sparse import hstack
 import matplotlib.pyplot as plt
 import seaborn as sns
-import streamlit as st
-import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
 from collections import Counter
 import re
-import numpy as np
 
 
-# load artifacts
-file_name = 'sentiment.pkl'
-file_path = 'vector.pkl'
+# -----------------------------
+# Load ML artifacts
+# -----------------------------
+model = joblib.load("sentiment.pkl")
+tfidf = joblib.load("vector.pkl")
 
-model = joblib.load(file_name)
-tfidf = joblib.load(file_path)
 
+# -----------------------------
+# Custom CSS Styling
+# -----------------------------
 st.markdown("""
 <style>
 
@@ -48,7 +50,7 @@ st.markdown("""
     margin-top: 20px;
 }
 
-/* Sidebar background */
+/* Sidebar */
 section[data-testid="stSidebar"] {
     background-color: #ffffff;
 }
@@ -66,244 +68,120 @@ section[data-testid="stSidebar"] {
     background-color: #6f1423;
 }
 
-/* Result card */
-.result-card {
-    background-color: white;
-    padding: 30px;
-    border-radius: 10px;
-    border-left: 8px solid #8b1c2e;
-    text-align: center;
-    font-size: 70px;
-    font-weight: bold;
-}
-
 </style>
 """, unsafe_allow_html=True)
 
-# ------------------------------------------------------------------------------------------------------------------------------------------------------
 
-st.set_page_config(page_title="Review App", layout="centered")
-
-# Navigation
+# -----------------------------
+# Sidebar Navigation
+# -----------------------------
 page = st.sidebar.selectbox(
     "Navigate",
     ["Review Page", "Review Analysis"]
 )
 
-# ------------------------------------------------------------------------------------------------------------------------------------------------------
 
+# =====================================================
+# PAGE 1 : REVIEW INPUT
+# =====================================================
 if page == "Review Page":
 
-  st.markdown('<div class="sub-title">Customer Review</div>', unsafe_allow_html=True)
-  st.markdown(""" <h1 style='text-align: center;color:#2E86C1;'>Feedback is the compass for greatness</h3> """, unsafe_allow_html=True)
+    st.markdown('<div class="sub-title">Customer Review</div>', unsafe_allow_html=True)
 
-  star_options = ["⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"]
-  rating = st.radio("How would you like the app", options=star_options, index=3, horizontal=True)
-
-  rating_value = star_options.index(rating) + 1         # Convert stars to numeric rating
-
-  review = st.text_area(
-    'Customer review ',
-    placeholder="We truly value your opinion",
-    height=150 )
+    st.markdown(
+        "<h3 style='text-align:center;color:#2E86C1;'>Feedback is the compass for greatness</h3>",
+        unsafe_allow_html=True
+    )
 
-  input_df = pd.DataFrame({
-        "rating":[rating_value],
-        "review":[review]
-    })
+    # Rating input
+    star_options = ["⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"]
 
-  X_text = tfidf.transform(input_df["review"])         # TFIDF transform
+    rating = st.radio(
+        "How would you rate the app?",
+        options=star_options,
+        index=3,
+        horizontal=True
+    )
 
+    rating_value = star_options.index(rating) + 1
 
-  X_num = input_df[["rating"]].values           # numeric feature
 
-    
-  X = hstack([X_text, X_num])              # combine features
- 
-  pred_ls = model.predict(X)
+    # Review text
+    review = st.text_area(
+        "Customer Review",
+        placeholder="We truly value your opinion...",
+        height=150
+    )
 
-  pred = np.argmax(pred_ls, axis=1)[0]
 
-  reverse_map = {0:"Negative", 1:"Neutral", 2:"Positive"}
+    submit = st.button("Submit Review")
 
-  sentiment = reverse_map[pred]
 
-  if len(rating) == 5 :
-        stars = "⭐⭐⭐⭐⭐"
-  elif len(rating) == 4 :
-        stars = "⭐⭐⭐⭐☆"
-  elif len(rating) == 3:
-        stars = "⭐⭐⭐☆☆"
-  elif len(rating) == 2:
-        stars = "⭐⭐☆☆☆"
-  else:
-        stars = "⭐☆☆☆☆"
+    if submit:
 
-  submit = st.button("Submit")
+        if review.strip() == "":
+            st.warning("Please enter a review.")
 
-  if submit:
-    if review.strip() == "":
-        st.warning("Please enter a review.")
-    else:
-        st.markdown(
-            f"""
-             <div style="
-              background:white;
-             padding:30px;
-              border-radius:15px;
-             text-align:center;
-             box-shadow:0 4px 12px rgba(0,0,0,0.2);
-             font-family:sans-serif;
-              ">
+        else:
 
-            <h2 style='color:#4CAF50;'>Thank You For Your Feedback!</h2>
+            # Convert to dataframe
+            input_df = pd.DataFrame({
+                "rating": [rating_value],
+                "review": [review]
+            })
 
-            <h1 style='color:#f59e0b'>{stars}</h1>
 
-           <p style='font-style:italic; color:#333;'>“{review}”</p>
+            # Text vectorization
+            X_text = tfidf.transform(input_df["review"])
 
-           <p style="color:#386E1F; font-weight:bold; font-size:28px;">{sentiment}</p>
 
-          </div>
-           """, unsafe_allow_html=True )
+            # Numeric rating feature
+            X_num = input_df[["rating"]].values
 
 
+            # Combine features
+            X = hstack([X_text, X_num])
 
 
-# -------------------------------------------------------------------------------------------------------------------------------------------------------
+            # Prediction
+            pred_ls = model.predict(X)
+            pred = np.argmax(pred_ls, axis=1)[0]
 
-df = pd.read_pickle("reviews_data.pkl")
 
-#  -------------------------------------------------------------------------------------------------------------------------------------------------------
-if page == "Review Analysis":
-  st.markdown('<div class="sub-title">Review Data Analysis</div>', unsafe_allow_html=True)
-  
-  analysis_option = st.selectbox(
-    "Select Analysis",
-    [
-        "Overall Sentiment",
-        "Sentiment vs Rating",
-        "Keywords by Sentiment",
-        "Sentiment vs Helpful Votes",
-        "Verified vs Non Verified Users",
-        "Review Length vs Sentiment",
-        "Sentiment by Location",
-        "Sentiment by Platform",
-        "Sentiment by Version",
-        "Negative Feedback Themes"
-    ]
-)
+            reverse_map = {
+                0: "Negative",
+                1: "Neutral",
+                2: "Positive"
+            }
 
-# -------- KEYWORD FUNCTION --------
-  def get_keywords(texts):
-    words = []
-    for t in texts:
-        w = re.findall(r'\b[a-z]+\b', str(t).lower())
-        words.extend(w)
-    return Counter(words).most_common(10)
+            sentiment = reverse_map[pred]
 
-# -------- VISUALS --------
 
-  if analysis_option == "Overall Sentiment":
+            # Star visualization
+            if rating_value == 5:
+                stars = "⭐⭐⭐⭐⭐"
+            elif rating_value == 4:
+                stars = "⭐⭐⭐⭐☆"
+            elif rating_value == 3:
+                stars = "⭐⭐⭐☆☆"
+            elif rating_value == 2:
+                stars = "⭐⭐☆☆☆"
+            else:
+                stars = "⭐☆☆☆☆"
 
-    st.subheader("Overall Sentiment Distribution")
 
-    sentiment_counts = df["sentiment"].value_counts()
+            # Result card
+            st.markdown(
+                f"""
+                <div style="
+                background:white;
+                padding:30px;
+                border-radius:15px;
+                text-align:center;
+                box-shadow:0 4px 12px rgba(0,0,0,0.2);
+                font-family:sans-serif;
+                ">
 
-    fig, ax = plt.subplots()
-    sns.barplot(x=sentiment_counts.index, y=sentiment_counts.values, ax=ax)
-    ax.set_ylabel("Count")
-    st.pyplot(fig)
+                <h2 style='color:#4CAF50;'>Thank You For Your Feedback!</h2>
 
-
-  elif analysis_option == "Sentiment vs Rating":
-
-    st.subheader("Sentiment vs Rating")
-
-    fig, ax = plt.subplots()
-    sns.countplot(data=df, x="rating", hue="sentiment", ax=ax)
-    st.pyplot(fig)
-
-
-  elif analysis_option == "Keywords by Sentiment":
-
-    st.subheader("Keywords Associated With Sentiment")
-
-    sentiment_type = st.selectbox("Select Sentiment", df["sentiment"].unique())
-
-    keywords = get_keywords(df[df["sentiment"] == sentiment_type]["review"])
-
-    kw_df = pd.DataFrame(keywords, columns=["Word","Frequency"])
-
-    fig, ax = plt.subplots()
-    sns.barplot(data=kw_df, x="Frequency", y="Word", ax=ax)
-    st.pyplot(fig)
-
-
-  elif analysis_option == "Sentiment vs Helpful Votes":
-
-    st.subheader("Sentiment vs Helpful Votes")
-
-    fig, ax = plt.subplots()
-    sns.boxplot(data=df, x="sentiment", y="helpful_votes", ax=ax)
-    st.pyplot(fig)
-
-
-  elif analysis_option == "Verified vs Non Verified Users":
-
-    st.subheader("Verified vs Non Verified Sentiment")
-
-    fig, ax = plt.subplots()
-    sns.countplot(data=df, x="verified_purchase", hue="sentiment", ax=ax)
-    st.pyplot(fig)
-
-
-  elif analysis_option == "Review Length vs Sentiment":
-
-    st.subheader("Review Length vs Sentiment")
-
-    fig, ax = plt.subplots()
-    sns.boxplot(data=df, x="sentiment", y="review_length", ax=ax)
-    st.pyplot(fig)
-
-
-  elif analysis_option == "Sentiment by Location":
-
-    st.subheader("Sentiment by Location")
-
-    location_df = df.groupby(["location","sentiment"]).size().unstack().fillna(0)
-
-    fig, ax = plt.subplots(figsize=(8,5))
-    location_df.plot(kind="bar", ax=ax)
-    st.pyplot(fig)
-
-
-  elif analysis_option == "Sentiment by Platform":
-
-    st.subheader("Sentiment by Platform")
-
-    fig, ax = plt.subplots()
-    sns.countplot(data=df, x="platform", hue="sentiment", ax=ax)
-    st.pyplot(fig)
-
-
-  elif analysis_option == "Sentiment by Version":
-
-    st.subheader("Sentiment by Version")
-
-    fig, ax = plt.subplots()
-    sns.countplot(data=df, x="version", hue="sentiment", ax=ax)
-    st.pyplot(fig)
-
-
-  elif analysis_option == "Negative Feedback Themes":
-
-    st.subheader("Common Negative Feedback Words")
-
-    negative_words = get_keywords(df[df["sentiment"]=="Negative"]["review"])
-    neg_df = pd.DataFrame(negative_words, columns=["Word","Frequency"])
-
-    fig, ax = plt.subplots()
-    sns.barplot(data=neg_df, x="Frequency", y="Word", ax=ax)
-    st.pyplot(fig)
-
+                <h1 style='colo
