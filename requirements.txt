@@ -17,6 +17,13 @@ joblib
 nltk
 tensorflow == 2.19.0
 keras
-
+streamlit==1.32.2
+pandas==2.1.4
+numpy==1.26.3
+scikit-learn==1.3.2
+scipy==1.11.4
+matplotlib==3.8.2
+seaborn==0.13.1
+joblib==1.3.2
 
 
